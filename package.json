@@ -1,0 +1,22 @@
+{
+  "name": "@leorio/bola",
+  "version": "1.0.0",
+  "description": "Bola slide",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leorio-Vic/Bola.git"
+  },
+  "keywords": [
+    "Bola"
+  ],
+  "author": "Leorio",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Leorio-Vic/Bola/issues"
+  },
+  "homepage": "https://github.com/Leorio-Vic/Bola#readme"
+}
