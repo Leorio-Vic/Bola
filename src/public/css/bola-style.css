@@ -1,0 +1,100 @@
+.bola-slider-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+  --bola-slider-snap-align: center;
+  --bola-slider-item-width: 100%;
+  --bola-slider-item-gap: 1rem;
+  --bola-slider-item-reveal: 0rem;
+  --bola-slider-item-ratio: 2/1;
+  --bola-slider-item-count: 1;
+  --bola-bola-slider-button-light: #fff;
+  --bola-bola-slider-button-dark: #333;
+  --bola-bola-slider-button-zoom: 1;
+  --bola-slider-track-opacity: 0.1;
+  --bola-slider-track-height: 0;
+  --bola-bola-slider-button-outside-size: 3.5rem;
+  --bola-slider-indicator-outside-size: 1.5rem;
+  --bola-slider-animation-duration: .75s;
+  --bola-slider-animation-delay: 0s;
+  --bola-slider-animation-timing: ease-in-out;
+}
+
+.bola-slider-wrapper {
+  width: 100%;
+  height: 300px;
+}
+
+.bola-slider-container {
+  transition: transform 0.3s linear;
+  color: #ffffff;
+}
+
+.bola-slide {
+  height: 100%;
+}
+
+.bola-slide[data-index="1"] {
+  background-color: #00bbff;
+}
+
+.bola-slide[data-index="2"] {
+  background-color: #4CAF50;
+}
+
+.bola-slide[data-index="3"] {
+  background-color: #999999;
+}
+
+.bola-slide[data-index="4"] {
+  background-color: #000000;
+}
+
+.bola-slide[data-index="5"] {
+  background-color: #8cde1d;
+}
+
+.bola-slide[data-index="6"] {
+  background-color: #b91c1c;
+}
+
+.bola-slide[data-index="7"] {
+  background-color: #e9950c;
+}
+
+.bola-slide[data-index="8"] {
+  background-color: #df3079;
+}
+
+.bola-slide[data-index="9"] {
+  background-color: #ffa07a;
+}
+
+.bola-slider-container {
+  --bola-slider-item-gap-totalwidth: calc(var(--bola-slider-item-gap) * (var(--bola-slider-item-count) - 1));
+  --bola-slider-item-width: calc((100% - var(--bola-slider-item-reveal) - var(--bola-slider-item-gap-totalwidth)) / var(--bola-slider-item-count));
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  align-items: center;
+  height: 100%;
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  scrollbar-width: none;
+  scrollbar-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, var(--bola-slider-track-opacity));
+  background-clip: padding-box;
+}
+
+.bola-slide {
+  flex: 0 0 calc(100% / var(--bola-slider-item-count) - 20px * ((var(--bola-slider-item-count) - 1) / var(--bola-slider-item-count)));
+  scroll-snap-align: start;
+  margin-right: 20px;
+}
+
+.slider-item-show4 {
+  --bola-slider-item-count: 6;
+}
+
