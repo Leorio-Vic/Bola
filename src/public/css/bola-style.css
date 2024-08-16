@@ -25,11 +25,6 @@
   height: 300px;
 }
 
-.bola-slider-container {
-  transition: transform 0.3s linear;
-  color: #ffffff;
-}
-
 .bola-slide {
   height: 100%;
 }
@@ -71,9 +66,14 @@
 }
 
 .bola-slider-container {
-  --bola-slider-item-gap-totalwidth: calc(var(--bola-slider-item-gap) * (var(--bola-slider-item-count) - 1));
-  --bola-slider-item-width: calc((100% - var(--bola-slider-item-reveal) - var(--bola-slider-item-gap-totalwidth)) / var(--bola-slider-item-count));
-  overflow-x: auto;
+  width: 100%;
+}
+
+.bola-slider-wrapper[data-effect="default"] .bola-slider-container {
+  overflow-x: visible;
+  will-change: transform;
+  transition: transform 0.3s linear;
+  translate: 0;
   -webkit-overflow-scrolling: touch;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
@@ -88,13 +88,62 @@
   background-clip: padding-box;
 }
 
+.bola-slider-wrapper[data-effect="fade"] .bola-slider-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .bola-slide {
   flex: 0 0 calc(100% / var(--bola-slider-item-count) - 20px * ((var(--bola-slider-item-count) - 1) / var(--bola-slider-item-count)));
   scroll-snap-align: start;
   margin-right: 20px;
 }
 
+.bola-slider-wrapper[data-effect="fade"] .bola-slide {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  transition: opacity 0.3s linear;
+  background-size: cover;
+  background-position: center;
+}
+
+.bola-slider-wrapper[data-effect="fade"] .bola-slide.is-active {
+  opacity: 1;
+}
+
+.bola-slider-wrapper[data-effect="fade"] .bola-slide:not(.is-active) {
+  opacity: 0;
+}
+
 .slider-item-show4 {
   --bola-slider-item-count: 6;
 }
 
+.slider-item-show-1 {
+  --bola-slider-item-count: 1;
+}
+
+.slider-item-show-2 {
+  --bola-slider-item-count: 2;
+}
+
+.slider-item-show-3 {
+  --bola-slider-item-count: 3;
+}
+
+.slider-item-show-4 {
+  --bola-slider-item-count: 4;
+}
+
+.slider-item-show-5 {
+  --bola-slider-item-count: 5;
+}
+
+.slider-item-show-6 {
+  --bola-slider-item-count: 6;
+}
