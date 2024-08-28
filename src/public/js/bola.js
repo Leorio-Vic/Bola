@@ -1,140 +1,236 @@
-class SliderInstance {
-  constructor(wrapperEl, params) {
-    this.wrapperEl = wrapperEl;
-    this.initData(params);
-    this.addEventListenerSlide();
+class Bola {
+  constructor(sliderQuery, configs) {
+    this.sliderElement = document.querySelector(`${sliderQuery}`);
+    this.configs = configs;
+    this.initSlider();
   }
 
-  initData(params) {
-    this.spaceBefore = params.spaceBefore;
-    this.nextEl = this.wrapperEl.querySelector(`:scope > ${params.navigation && params.navigation.nextEl ? params.navigation.nextEl : '.bola-slider-button__next'}`);
-    this.prevEl = this.wrapperEl.querySelector(`:scope > ${params.navigation && params.navigation.prevEl ? params.navigation.prevEl : '.bola-slider-button__prev'}`);
-    this.sliderContainer = this.wrapperEl.querySelector(":scope > .bola-slider-container");
-    this.slideItems = this.sliderContainer.querySelectorAll(":scope > .bola-slide");
+  initSlider() {
+    this.loadElement();
 
-    this.firstSlideShowIndex = 0;
-    this.lastSlideShowIndex = params.slidesPerView - 1;
+    this.sliderNavs = this.sliderElement.querySelectorAll(":scope >.slider-nav");
+    this.sliderIndicatorsWrapper = this.sliderElement.querySelector(":scope >.slider-indicators");
+    this.sliderIndicators = this.sliderIndicatorsWrapper ? this.sliderIndicatorsWrapper.querySelectorAll('.slider-indicator') : [];
 
-    this.slidesPerView = params.slidesPerView;
-    this.slidesPerGroup = params.slidesPerGroup;
-    this.effect = this.wrapperEl.dataset.effect ? this.wrapperEl.dataset.effect : "default";
-    this.noLoop = params.noLoop;
-  }
+    this.isNoPlay = this.sliderElement.classList.contains("slider-nav-nodelay");
+    this.autoPlay = this.sliderElement.classList.contains("slider-nav-autoplay");
+    this.autoPause = this.sliderElement.classList.contains("slider-nav-autopause");
+    this.isVerticalMode = this.sliderElement.classList.contains("slide-mode-vertical");
 
-  addEventListenerSlide() {
-    if (this.nextEl) {
-      this.nextEl.addEventListener("click", this.handleNext.bind(this));
+    this.effect = this.configs.effect ? this.configs.effect : 'slide';
+    this.ratio = this.configs.ratio ? parseFloat(this.configs.ratio) : 1;
+    this.timeout = this.configs.timeout ? this.configs.timeout : 2500;
+    this.isResize = this.configs.isResize ? this.configs.isResize : false;
+    this.slidesPerGroup = this.configs.slidesPerGroup ? this.configs.slidesPerGroup : 1;
+    this.slidesPerView = this.configs.slidesPerView ? this.configs.slidesPerView : 1;
+    if (this.effect === "fade") {
+      this.slidesPerGroup = 1;
+      this.slidesPerView = 1;
     }
 
-    if (this.prevEl) {
-      this.prevEl.addEventListener("click", this.handlePrevious.bind(this));
-    }
-    // if (this.sliderContainer) {
-    //   this.sliderContainer.addEventListener("drag", (e) => e.preventDefault());
-    //   this.sliderContainer.addEventListener("touchstart", this.handleTouchStart.bind(this));
-    //   this.sliderContainer.addEventListener("touchend", this.handleTouchEnd.bind(this));
-    //   this.sliderContainer.addEventListener("touchmove", this.handleTouchMove.bind(this));
-    // }
-  }
 
-  handleNext() {
-    if (!this.nextEl.classList.contains("enabled")) {
-      return;
+    this.startSlideItemIndex = 0;
+    this.endSlideItemIndex = this.startSlideItemIndex + this.slidesPerView;
+
+    this.activeSlideIndex = 0;
+
+    if (this.configs.isResize) this.resize();
+
+    if (this.effect === "fade" && this.slides.length > 0) {
+      this.slides[0].classList.add("is-active");
     }
 
-    this.handleButton(true);
-  }
+    this.sliderNavs.forEach(navElement => {
+      let next = navElement.classList.contains("slider-nav-next");
+      navElement.addEventListener("click", () => this.slide(next), {passive: true});
+    })
 
-  handlePrevious() {
-    if (!this.prevEl.classList.contains("enabled")) {
-      return;
+    this.sliderIndicators.forEach(indicatorElement => {
+      indicatorElement.addEventListener("click", this.slideToByIndicator.bind(this));
+    })
+
+    if (this.autoPlay) {
+      this.handleAutoPlay(this.sliderElement, this.autoPause);
+    }
+    if (["slider-nav-autohide", "slider-nav-animation"].some(className => this.sliderElement.classList.contains(className))) {
+      const threshold = this.sliderElement.getAttribute("data-slider-nav-animation-threshold") ? this.sliderElement.getAttribute("data-slider-nav-animation-threshold") : 0.3;
+      this.setVisibleSlides(threshold);
     }
 
-    this.handleButton(false);
+    this.sliderElement.addEventListener("maximize:swiffy-slider:slide", () => {
+      this.handleIndicators();
+    })
   }
 
-  handleButton (isNext = true) {
-    switch (this.effect) {
-      case "fade":
-        this.fade(isNext);
-        break;
-      default:
-        this.slide(isNext);
-        break;
+  setVisibleSlides(threshold = 0.3) {
+    let observer = new IntersectionObserver(slides => {
+      slides.forEach(slide => {
+        slide.isIntersecting ? slide.target.classList.add("slide-visible") : slide.target.classList.remove("slide-visible");
+      });
+      this.sliderElement.querySelector(".slider-container>*:first-child").classList.contains("slide-visible") ? this.sliderElement.classList.add("slider-item-first-visible") : this.sliderElement.classList.remove("slider-item-first-visible");
+      this.sliderElement.querySelector(".slider-container>*:last-child").classList.contains("slide-visible") ? this.sliderElement.classList.add("slider-item-last-visible") : this.sliderElement.classList.remove("slider-item-last-visible");
+    }, {
+      root: this.sliderElement.querySelector(".slider-container"),
+      threshold: threshold
+    });
+    for (let slide of this.sliderElement.querySelectorAll(".slider-container>*"))
+      observer.observe(slide);
+  }
+
+  slide(next = true) {
+    this.loadElement();
+
+    const slidesCount = this.slides.length;
+    const oldStartSlideItemIndex = this.startSlideItemIndex;
+    const oldEndSlideItemIndex = this.endSlideItemIndex;
+    console.log('this.slidesPerGroup: ', this.slidesPerGroup)
+    let newStartSlideItem = next
+      ? (oldStartSlideItemIndex + this.slidesPerGroup) % slidesCount
+      : (oldStartSlideItemIndex - this.slidesPerGroup + slidesCount) % slidesCount;
+
+    let newEndSlideItem = next
+      ? (oldEndSlideItemIndex + this.slidesPerGroup) % slidesCount
+      : (oldEndSlideItemIndex - this.slidesPerGroup + slidesCount) % slidesCount;
+
+
+    if (this.effect !== "fade") {
+      this.slideToVer2(newStartSlideItem);
     }
+
+    console.log('newStartSlideItem: ', newStartSlideItem)
+    console.log('newEndSlideItem: ', newEndSlideItem)
+    this.updateActiveSlide(newStartSlideItem, newEndSlideItem)
+
+    this.startSlideItemIndex = newStartSlideItem;
+    this.endSlideItemIndex = newEndSlideItem;
   }
 
-  slide(isNext = true) {
-    const newFirstSlideShowIndex = this.firstSlideShowIndex + this.slidesPerGroup * (isNext ? 1 : -1);
-    const lastSlideShowIndex = this.lastSlideShowIndex + this.slidesPerGroup * (isNext ? 1 : -1);
+  slideToByIndicator(event) {
+    const indicator = event.target;
+    const oldActiveSlideIndex = this.activeSlideIndex;
+    const indicatorIndex = Array.from(this.sliderIndicators).indexOf(indicator);
+    const indicatorCount = this.sliderIndicators.length;
+    const slideCount = this.slides.length;
 
-    // if (lastSlideShowIndex !== this.slideItems.length + 1) {
-    if (this.slideItems[newFirstSlideShowIndex]) {
-      const targetRect = this.slideItems[newFirstSlideShowIndex].getBoundingClientRect();
-      const containerRect = this.sliderContainer.getBoundingClientRect();
-      let scrollOffset = targetRect.left - containerRect.left;
+    const newActiveSlideIndex = Math.floor((slideCount / indicatorCount) * indicatorIndex);
 
-      this.sliderContainer.style.transform = `translateX(${scrollOffset * -1}px)`;
-      this.firstSlideShowIndex = newFirstSlideShowIndex;
-      this.lastSlideShowIndex = lastSlideShowIndex;
-    }
-    // }
-
-    this.prevEl.classList[this.firstSlideShowIndex === 0 ? 'remove' : 'add']('enabled');
-    this.nextEl.classList[this.lastSlideShowIndex === this.slideItems.length - 1 ? 'remove' : 'add']('enabled');
+    this.updateSlide(newActiveSlideIndex, oldActiveSlideIndex);
   }
 
-  fade(isNext = true) {
-    let newFirstSlideShowIndex;
-    if (isNext) {
-      newFirstSlideShowIndex = this.firstSlideShowIndex + 1;
+  slideToVer2(numberStep) {
+    const gap = parseInt(window.getComputedStyle(this.container)[this.isVerticalMode ? 'rowGap' : 'columnGap']) || 0;
+    const scrollStep = (this.isVerticalMode ? this.slides[0].offsetHeight : this.slides[0].offsetWidth) + gap;
+
+    const scrollOptions = {
+      behavior: this.isNoPlay ? "auto" : "smooth",
+      [this.isVerticalMode ? 'top' : 'left']: scrollStep * numberStep
+    };
+
+    this.container.scroll(scrollOptions);
+  }
+
+  updateSlide(newStartSlideItem, newEndSlideItem) {
+    if (this.effect === "fade") {
+      this.updateActiveSlide(newStartSlideItem, newEndSlideItem);
     } else {
-      newFirstSlideShowIndex = this.firstSlideShowIndex - 1;
+      this.slideToVer2(newStartSlideItem);
     }
 
-    if (this.slideItems[newFirstSlideShowIndex]) {
-      this.slideItems[this.firstSlideShowIndex]?.classList.remove('is-active');
-      this.slideItems[newFirstSlideShowIndex]?.classList.add('is-active');
-      this.firstSlideShowIndex = newFirstSlideShowIndex;
-
-
-      this.prevEl.classList[this.firstSlideShowIndex === 0 ? 'remove' : 'add']('enabled');
-      this.nextEl.classList[this.firstSlideShowIndex === this.slideItems.length - 1 ? 'remove' : 'add']('enabled');
-    }
+    // this.dispatchEventSlide(oldIndex);
   }
-}
 
-class Slider {
-  constructor() {
-    let _len = arguments.length;
-    let args = {};
-    for (let i = 0; i < _len; i++) {
-      args[i] = arguments[i];
-    }
+  slideTo(slideIndex) {
+    this.loadElement();
 
-    let sliderWrapper = args[0];
-    let params = args[1];
+    const gap = parseInt(window.getComputedStyle(this.container)[this.isVerticalMode ? 'rowGap' : 'columnGap']) || 0;
+    const scrollStep = (this.isVerticalMode ? this.slides[0].offsetHeight : this.slides[0].offsetWidth) + gap;
 
-    if (!params) params = {};
+    const scrollOptions = {
+      behavior: this.isNoPlay ? "auto" : "smooth",
+      [this.isVerticalMode ? 'top' : 'left']: scrollStep * slideIndex
+    };
 
-    if (sliderWrapper) {
-      document.querySelectorAll(sliderWrapper).forEach((wrapperEl) => {
-        new SliderInstance(wrapperEl, params);
+    this.container.scroll(scrollOptions);
+
+    this.updateActiveSlide(slideIndex);
+  }
+
+  handleIndicators() {
+    if (!this.sliderElement) return;
+    this.loadElement();
+
+    this.sliderIndicators.forEach((indicator, index) => {
+      indicator.classList.toggle("active", this.activeSlideIndex === index);
+    });
+  }
+
+  handleAutoPlay() {
+    let autoplayTimer = setInterval(() => this.slide(true), this.timeout);
+    const autoPlayer = () => this.handleAutoPlay(this.sliderElement);
+    if (this.autoPause) {
+      ["mouseover", "touchstart"].forEach(function (event) {
+        this.sliderElement.addEventListener(event, function () {
+          window.clearTimeout(autoplayTimer);
+        }, {once: true, passive: true});
+      });
+      ["mouseout", "touchend"].forEach(function (event) {
+        this.sliderElement.addEventListener(event, function () {
+          autoPlayer();
+        }, {once: true, passive: true});
       });
     }
+    return autoplayTimer;
+  }
+
+  resize() {
+    const width = this.sliderElement.offsetWidth;
+    const height = width * this.ratio;
+    this.sliderElement.style.height = height + 'px';
+  }
+
+  loadElement() {
+    this.container = this.sliderElement.querySelector(":scope >.slider-container");
+    this.slides = this.container.querySelectorAll(":scope >.slide-item");
+  }
+
+  updateActiveSlide(newStartSlideItem, newEndSlideItem) {
+    this.slides.forEach((slide, index) => {
+      if (index >= newStartSlideItem && index <= newEndSlideItem) {
+        slide.classList.add('is-active');
+      } else {
+        slide.classList.remove('is-active');
+      }
+    })
+  }
+
+  dispatchEventSlide(oldActiveSlideIndex) {
+    this.sliderElement.dispatchEvent(
+      new CustomEvent(`maximize:swiffy-slider:slide`, {
+        bubbles: true,
+        detail: {
+          oldActiveSlideIndex: oldActiveSlideIndex,
+          newActiveSlideIndex: this.activeSlideIndex
+        },
+      }),
+    );
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  let slider = new Slider('.bola-slider-wrapper', {
-    spaceBetween: 30,
-
+document.addEventListener("DOMContentLoaded", () => {
+  let slider = new Bola('.bola-slider-wrapper', {
+    effect: 'slide',
     navigation: {
-      nextEl: ".bola-slider-button__next",
-      prevEl: ".bola-slider-button__prev"
+      nextEl: ".swiper-button-next",
+      prevEl: ".swiper-button-prev"
     },
-    slidesPerView: 2,
-    slidesPerGroup: 1,
-    noLoop: true
+    slidesPerView: 4,
+    slidesPerGroup: 4,
+    breakpoints: {
+      768: {
+        slidesPerView: 6,
+        slidesPerGroup: 5
+      },
+    },
   })
 })
+

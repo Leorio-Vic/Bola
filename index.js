@@ -37,14 +37,14 @@ class SliderInstance extends HTMLElement {
 
   init(params) {
     this.spaceBefore = params.spaceBefore;
-    this.nextEl = this.containerEl.querySelector(params.navigation && params.navigation.nextEl ? params.navigation.nextEl : '.swiper-button-next');
-    this.prevEl = this.containerEl.querySelector(params.navigation && params.navigation.prevEl ? params.navigation.prevEl : '.swiper-button-prev');
+    this.nextEl = this.containerEl.querySelector(params.navigation && params.navigation.nextEl ? params.navigation.nextEl : ':scope >.swiper-button-next');
+    this.prevEl = this.containerEl.querySelector(params.navigation && params.navigation.prevEl ? params.navigation.prevEl : ':scope >.swiper-button-prev');
     this.slidesPerView = params.slidesPerView;
     this.slidesPerView = params.slidesPerView;
   }
 }
 
-let slider = new Slider('.slider-wrapper', {
+let slider = new Slider('.bola-slider-wrapper', {
   spaceBetween: 30,
 
   navigation: {
